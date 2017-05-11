@@ -7,6 +7,10 @@
 #include "torch/csrc/utils/python_strings.h"
 #include "THDP.h"
 
+#ifdef WITH_CUDA
+#include "torch/csrc/cuda/Stream.h"
+#endif
+
 static std::unordered_map<std::string, THDChannelType> name2channel_type = {
     {"mpi", THDChannelMPI},
     {"tcp", THDChannelTCP},
@@ -49,6 +53,10 @@ static bool THDPModule_loadClasses(PyObject *self)
 static std::unordered_map<PyObject*, THDReduceOp> obj2reduceop;
 static std::unordered_map<PyObject*, THDGroup> obj2group;
 
+#ifdef WITH_CUDA
+extern THCState* state;
+#endif
+
 PyObject* THDPModule_initProcessGroup(PyObject *_unused, PyObject *args)
 {
   HANDLE_TH_ERRORS
@@ -68,7 +76,13 @@ PyObject* THDPModule_initProcessGroup(PyObject *_unused, PyObject *args)
   int rank = THPUtils_unpackLong(PyTuple_GET_ITEM(args, 4));
 
   THDChannelType channel_type = name2channel_type.at(backend_name);
-  THDProcessGroupInit(channel_type, init_method, world_size, group_name, rank);
+  {
+    AutoNoGIL nogil;
+    THDProcessGroupInit(channel_type, init_method, world_size, group_name, rank);
+  }
+#ifdef WITH_CUDA
+  THDSetCudaStatePtr(&state);
+#endif
   Py_RETURN_NONE;
   END_HANDLE_TH_ERRORS
 }
@@ -92,10 +106,29 @@ PyObject* THDPModule_initMasterWorker(PyObject *_unused, PyObject *args)
   int rank = THPUtils_unpackLong(PyTuple_GET_ITEM(args, 4));
 
   THDChannelType channel_type = name2channel_type.at(backend_name);
-  THDMasterWorkerInit(channel_type, init_method, world_size, group_name, rank);
+  {
+    AutoNoGIL nogil;
+    THDMasterWorkerInit(channel_type, init_method, world_size, group_name, rank);
+  }
+#ifdef WITH_CUDA
+  THDSetCudaStatePtr(&state);
+#endif
   Py_RETURN_NONE;
   END_HANDLE_TH_ERRORS
 }
+
+#ifdef WITH_CUDA
+PyObject* THDPModule_registerStream(PyObject *_unused, PyObject *_stream)
+{
+  HANDLE_TH_ERRORS
+  THPUtils_assert(THCPStream_Check(_stream), "_register_stream expects a "
+      "torch.cuda.Stream object");
+  THCPStream *stream = (THCPStream*)_stream;
+  THDRegisterCudaStream(stream->cuda_stream);
+  Py_RETURN_NONE;
+  END_HANDLE_TH_ERRORS
+}
+#endif
 
 PyObject* THDPModule_getRank(PyObject *_unused)
 {
@@ -589,6 +622,9 @@ static struct PyMethodDef _THDPModule_methods[] = {
   {"_dist_init_extension", (PyCFunction)THDPModule_initExtension, METH_VARARGS, NULL},
   {"_dist_init_process_group", (PyCFunction)THDPModule_initProcessGroup, METH_VARARGS, NULL},
   {"_dist_init_master_worker", (PyCFunction)THDPModule_initMasterWorker, METH_VARARGS, NULL},
+#ifdef WITH_CUDA
+  {"_dist_register_stream", (PyCFunction)THDPModule_registerStream, METH_O, NULL},
+#endif
   {"_dist_get_rank", (PyCFunction)THDPModule_getRank, METH_NOARGS, NULL},
   {"_dist_get_num_processes", (PyCFunction)THDPModule_getNumProcesses, METH_NOARGS, NULL},
   {"_dist_isend", (PyCFunction)THDPModule_isend, METH_VARARGS, NULL},
