@@ -133,6 +133,32 @@ class NLLLoss2d(_WeightedLoss):
     pass
 
 
+class WeightedNLLLoss2d(Module):
+    r"""This is negative log likelihood loss for image inputs with a spatial weight map, 
+        which specifies weight for each pixel. It computes loss per-pixel.
+    
+    Examples:
+        >>> m = nn.Conv2d(16, 32, (3, 3)).float()
+        >>> loss = nn.WeightedNLLLoss2d()
+        >>> # input is of size nBatch x nClasses x height x width
+        >>> input = autograd.Variable(torch.randn(3, 16, 10, 10))
+        >>> weight_map = autograd.Variable(torch.ones(3, 1, 10, 10))
+        >>> # each element in target has to have 0 <= value < nclasses
+        >>> target = autograd.Variable(torch.LongTensor(3, 8, 8).random_(0, 4))
+        >>> output = loss(m(input), target, weight_map)
+        >>> output.backward()
+    """
+    def __init__(self, weight=None, size_average=True):
+        super(WeightedNLLLoss2d, self).__init__()
+        self.size_average = size_average
+        self.register_buffer('weight', weight)
+
+    def forward(self, input, target, weight_map):
+        _assert_no_grad(target)
+        backend_fn = getattr(self._backend, type(self).__name__)
+        return backend_fn(self.size_average, weight=self.weight)(input, target, weight_map)
+
+
 class KLDivLoss(_WeightedLoss):
     r"""The `Kullback-Leibler divergence`_ Loss
 

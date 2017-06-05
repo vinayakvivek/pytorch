@@ -48,3 +48,4 @@ test/data/legacy_serialized.pt
 # OSX dir files
 .DS_Store
 
+.idea/

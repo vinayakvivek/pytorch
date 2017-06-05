@@ -52,6 +52,49 @@ def _make_function_class_criterion(class_name, update_output, update_grad_input,
 
     return type(class_name, (Function,), dict(__init__=__init__, forward=forward, backward=backward))
 
+def _make_function_weighted_class_criterion(class_name, update_output, update_grad_input, acc_grad_parameters):
+    weight_arg_idx = -1
+
+    for i, arg in enumerate(update_output.arguments):
+        if arg.name.startswith('weight') and arg.name != 'weight_map':
+            weight_arg_idx = i
+            break
+
+    buffers_idx = []
+    additional_arg_idx = 0
+    for arg in update_output.arguments[5:]:
+        if not arg.name.startswith('weight') and arg.type == 'THTensor*':
+            buffers_idx.append(additional_arg_idx)
+        additional_arg_idx += 1
+
+    def __init__(self, *args, **kwargs):
+        Function.__init__(self)
+        self.weight = kwargs.get('weight')
+        self.additional_args = list(args)
+
+    def forward(self, input, target, weight_map):
+        self._backend = type2backend[type(input)]
+        self.save_for_backward(input, target, weight_map)
+        if weight_arg_idx >= 0:
+            insert_idx = weight_arg_idx - 5  # state, input, target, weight_map, output
+            self.additional_args.insert(insert_idx, self.weight)
+        for idx in buffers_idx:
+            self.additional_args.insert(idx, input.new(1))
+        output = input.new(1)
+        getattr(self._backend, update_output.name)(self._backend.library_state, input, target, weight_map,
+                                                   output, *self.additional_args)
+        return output
+
+    def backward(self, grad_output):
+        input, target, weight_map = self.saved_tensors
+        grad_input = grad_output.new().resize_as_(input).zero_()
+        getattr(self._backend, update_grad_input.name)(self._backend.library_state, input, target, weight_map,
+                                                       grad_input, *self.additional_args)
+        grad_output_expanded = grad_output.view(*repeat(1, grad_input.dim()))
+        grad_input.mul_(grad_output_expanded.expand_as(grad_input))
+        return grad_input, None, None
+
+    return type(class_name, (Function,), dict(__init__=__init__, forward=forward, backward=backward))
 
 def _find_buffers(args, ignored_args):
     additional_arg_idx = 0
@@ -247,6 +290,7 @@ def _generate_function_classes(scope_dict):
         'ClassNLLCriterion': 'NLLLoss',
         'DistKLDivCriterion': 'KLDivLoss',
         'SpatialClassNLLCriterion': 'NLLLoss2d',
+        'SpatialWeightedClassNLLCriterion': 'WeightedNLLLoss2d',
         'MultiLabelMarginCriterion': 'MultiLabelMarginLoss',
         'MultiMarginCriterion': 'MultiMarginLoss',
         'SmoothL1Criterion': 'SmoothL1Loss',
@@ -260,7 +304,10 @@ def _generate_function_classes(scope_dict):
         acc_grad_parameters = function_by_name.get(fn + '_accGradParameters')
         class_name = name_remap.get(fn, fn)
         # This has to call a function to retain correct references to functions
-        if 'Criterion' in fn:
+        if fn == 'SpatialWeightedClassNLLCriterion':
+            cls = _make_function_weighted_class_criterion(class_name, update_output,
+                                                          update_grad_input, acc_grad_parameters)
+        elif 'Criterion' in fn:
             cls = _make_function_class_criterion(class_name, update_output,
                                                  update_grad_input, acc_grad_parameters)
         else:
