@@ -118,7 +118,7 @@ from .SpatialSoftMax import SpatialSoftMax
 from .SpatialSubSampling import SpatialSubSampling
 from .SpatialSubtractiveNormalization import SpatialSubtractiveNormalization
 from .SpatialUpSamplingNearest import SpatialUpSamplingNearest
-from .SpatialWeightedClassNLLCriterion import SpatialWeightedClassNLLCriterion
+# from .SpatialWeightedClassNLLCriterion import SpatialWeightedClassNLLCriterion
 from .SpatialZeroPadding import SpatialZeroPadding
 from .SplitTable import SplitTable
 from .Sqrt import Sqrt

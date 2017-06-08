@@ -77,6 +77,7 @@
 #include "generic/SpatialClassNLLCriterion.c"
 #include "THGenerateFloatTypes.h"
 
+// new
 #include "generic/SpatialWeightedClassNLLCriterion.c"
 #include "THGenerateFloatTypes.h"
 
