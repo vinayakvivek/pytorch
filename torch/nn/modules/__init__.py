@@ -5,7 +5,7 @@ from .conv import Conv1d, Conv2d, Conv3d, \
 from .activation import Threshold, ReLU, Hardtanh, ReLU6, Sigmoid, Tanh, \
     Softmax, Softmax2d, LogSoftmax, ELU, Hardshrink, LeakyReLU, LogSigmoid, \
     Softplus, Softshrink, PReLU, Softsign, Softmin, Tanhshrink, RReLU
-from .loss import L1Loss, NLLLoss, KLDivLoss, MSELoss, BCELoss, NLLLoss2d, WeightedNLLLoss2d, \
+from .loss import L1Loss, NLLLoss, KLDivLoss, MSELoss, BCELoss, NLLLoss2d, WeightedNLLLoss2d, WeightedNLLLoss, \
     CosineEmbeddingLoss, HingeEmbeddingLoss, MarginRankingLoss, \
     MultiLabelMarginLoss, MultiLabelSoftMarginLoss, MultiMarginLoss, \
     SmoothL1Loss, SoftMarginLoss, CrossEntropyLoss, TripletMarginLoss
@@ -31,7 +31,7 @@ __all__ = [
     'ConvTranspose2d', 'ConvTranspose3d', 'Threshold', 'ReLU', 'Hardtanh', 'ReLU6',
     'Sigmoid', 'Tanh', 'Softmax', 'Softmax2d', 'LogSoftmax', 'ELU', 'Hardshrink',
     'LeakyReLU', 'LogSigmoid', 'Softplus', 'Softshrink', 'PReLU', 'Softsign', 'Softmin',
-    'Tanhshrink', 'RReLU', 'L1Loss', 'NLLLoss', 'KLDivLoss', 'MSELoss', 'BCELoss',
+    'Tanhshrink', 'RReLU', 'L1Loss', 'NLLLoss', 'KLDivLoss', 'MSELoss', 'BCELoss', 'WeightedNLLLoss',
     'NLLLoss2d', 'WeightedNLLLoss2d', 'CosineEmbeddingLoss', 'HingeEmbeddingLoss', 'MarginRankingLoss',
     'MultiLabelMarginLoss', 'MultiLabelSoftMarginLoss', 'MultiMarginLoss', 'SmoothL1Loss',
     'SoftMarginLoss', 'CrossEntropyLoss', 'Container', 'Sequential', 'ModuleList',

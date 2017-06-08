@@ -289,6 +289,7 @@ def _generate_function_classes(scope_dict):
         'BCECriterion': '_BCELoss',  # TODO: move the glue code into THNN
         'ClassNLLCriterion': 'NLLLoss',
         'DistKLDivCriterion': 'KLDivLoss',
+        'WeightedClassNLLCriterion': 'WeightedNLLLoss',
         'SpatialClassNLLCriterion': 'NLLLoss2d',
         'SpatialWeightedClassNLLCriterion': 'WeightedNLLLoss2d',
         'MultiLabelMarginCriterion': 'MultiLabelMarginLoss',
@@ -304,7 +305,7 @@ def _generate_function_classes(scope_dict):
         acc_grad_parameters = function_by_name.get(fn + '_accGradParameters')
         class_name = name_remap.get(fn, fn)
         # This has to call a function to retain correct references to functions
-        if fn == 'SpatialWeightedClassNLLCriterion':
+        if fn == 'SpatialWeightedClassNLLCriterion' or fn == 'WeightedClassNLLCriterion':
             cls = _make_function_weighted_class_criterion(class_name, update_output,
                                                           update_grad_input, acc_grad_parameters)
         elif 'Criterion' in fn:

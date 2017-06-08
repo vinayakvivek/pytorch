@@ -106,6 +106,19 @@ class NLLLoss(_WeightedLoss):
     pass
 
 
+class WeightedNLLLoss(Module):
+
+    def __init__(self, weight=None, size_average=True):
+        super(WeightedNLLLoss, self).__init__()
+        self.size_average = size_average
+        self.register_buffer('weight', weight)
+
+    def forward(self, input, target, weight_map):
+        _assert_no_grad(target)
+        backend_fn = getattr(self._backend, type(self).__name__)
+        return backend_fn(self.size_average, weight=self.weight)(input, target, weight_map)
+
+
 class NLLLoss2d(_WeightedLoss):
     r"""This is negative log likehood loss, but for image inputs. It computes NLL loss per-pixel.
 
